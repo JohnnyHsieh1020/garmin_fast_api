@@ -15,14 +15,15 @@ user_name = config("POSTGRESQL_USER")
 pwd = config("POSTGRESQL_PWD")
 db_name = config("POSTGRESQL_DB")
 
-# Connect to PostgreSQL
+# Set connection parameters
 db_connect_params = {
     "host": host,
     "port": port,
     "database": db_name,
     "user": user_name,
-    "password": pwd
+    "password": pwd,
 }
+
 
 @app.post("/Activities")
 async def add_activities(activities: dict = Body(...)):
@@ -40,7 +41,7 @@ async def add_activities(activities: dict = Body(...)):
     # Specify the timezone (Asia/Taipei for Taiwan)
     taipei_timezone = pytz.timezone("Asia/Taipei")
 
-    # Get today's datetime in the specified timezone and format it as a string
+    # Get today's datetime
     now = datetime.now(taipei_timezone).strftime("%Y-%m-%d %H:%M:%S.%f")
 
     # Merge the data
@@ -59,12 +60,15 @@ async def add_activities(activities: dict = Body(...)):
 
     # Commit the changes
     con.commit()
+    print("Create successfully!")
 
     # Close the connection
+    cur.close()
     con.close()
     print("Connection closed!")
 
     return {"result": activities}
+
 
 @app.post("/Dailies")
 async def add_dailies(dailies: dict = Body(...)):
@@ -82,7 +86,7 @@ async def add_dailies(dailies: dict = Body(...)):
     # Specify the timezone (Asia/Taipei for Taiwan)
     taipei_timezone = pytz.timezone("Asia/Taipei")
 
-    # Get today's datetime in the specified timezone and format it as a string
+    # Get today's datetime
     now = datetime.now(taipei_timezone).strftime("%Y-%m-%d %H:%M:%S.%f")
 
     # Merge the data
@@ -101,12 +105,15 @@ async def add_dailies(dailies: dict = Body(...)):
 
     # Commit the changes
     con.commit()
+    print("Create successfully!")
 
     # Close the connection
+    cur.close()
     con.close()
     print("Connection closed!")
 
     return {"result": dailies}
+
 
 @app.post("/PulseOx")
 async def add_pulseox(pulseox: dict = Body(...)):
@@ -118,13 +125,13 @@ async def add_pulseox(pulseox: dict = Body(...)):
     # Get the type of the data
     data_type = next(iter(pulseox))
 
-    # Extract the "dailies" list
+    # Extract the "pulseox" list
     details = pulseox["pulseox"][0]
 
     # Specify the timezone (Asia/Taipei for Taiwan)
     taipei_timezone = pytz.timezone("Asia/Taipei")
 
-    # Get today's datetime in the specified timezone and format it as a string
+    # Get today's datetime
     now = datetime.now(taipei_timezone).strftime("%Y-%m-%d %H:%M:%S.%f")
 
     # Merge the data
@@ -143,8 +150,10 @@ async def add_pulseox(pulseox: dict = Body(...)):
 
     # Commit the changes
     con.commit()
+    print("Create successfully!")
 
     # Close the connection
+    cur.close()
     con.close()
     print("Connection closed!")
 
