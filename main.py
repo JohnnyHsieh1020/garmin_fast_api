@@ -8,44 +8,43 @@ from decouple import config
 
 app = FastAPI()
 
-# Render DB info
-host = config("POSTGRESQL_HOST")
-port = config("POSTGRESQL_PORT")
-user_name = config("POSTGRESQL_USER")
-pwd = config("POSTGRESQL_PWD")
-db_name = config("POSTGRESQL_DB")
-
-# Set connection parameters
+# Set DB connection parameters
 db_connect_params = {
-    "host": host,
-    "port": port,
-    "database": db_name,
-    "user": user_name,
-    "password": pwd,
+    "host": config("POSTGRESQL_HOST"),
+    "port": config("POSTGRESQL_PORT"),
+    "database": config("POSTGRESQL_DB"),
+    "user": config("POSTGRESQL_USER"),
+    "password": config("POSTGRESQL_PWD"),
 }
 
+# Specify the timezone (Asia/Taipei for Taiwan)
+TW_TIMEZONE = pytz.timezone("Asia/Taipei")
+
+# * Function for extracting data. Return complete user's data and Garmin User ID.
+def extract_data(raw, KEYWORD):
+    details = raw[KEYWORD][0]
+    garmin_user_id = details.get("userId")
+
+    return details, garmin_user_id
 
 @app.post("/Activities")
 async def add_activities(activities: dict = Body(...)):
+    # Set parameters
+    KEYWORD = "activities"
+
     # Connect to Render DB
     con = psycopg2.connect(**db_connect_params)
     cur = con.cursor()
     print("Connect successfully!")
 
-    # Get the type of the data
-    data_type = next(iter(activities))
+    # Extract the data
+    details, garmin_user_id = extract_data(activities, KEYWORD)
 
-    # Extract the "activities" list
-    details = activities["activities"][0]
-
-    # Specify the timezone (Asia/Taipei for Taiwan)
-    taipei_timezone = pytz.timezone("Asia/Taipei")
-
-    # Get today's datetime
-    now = datetime.now(taipei_timezone).strftime("%Y-%m-%d %H:%M:%S.%f")
+    # Get datetime
+    now = datetime.now(TW_TIMEZONE).strftime("%Y-%m-%d %H:%M:%S.%f")
 
     # Merge the data
-    data = {"type": data_type, **details, "get_data_datetime": now}
+    data = {**details, "get_data_datetime": now}
 
     # Convert to json format
     json_data = json.dumps(data)
@@ -53,9 +52,9 @@ async def add_activities(activities: dict = Body(...)):
     # Insert to DB
     cur.execute(
         """
-        INSERT INTO activities (details) VALUES (%s)
+        INSERT INTO cg_activities (details, garmin_user_id) VALUES (%s, %s)
     """,
-        (json_data,),
+        (json_data, garmin_user_id),
     )
 
     # Commit the changes
@@ -72,25 +71,22 @@ async def add_activities(activities: dict = Body(...)):
 
 @app.post("/Dailies")
 async def add_dailies(dailies: dict = Body(...)):
+    # Set parameters
+    KEYWORD = "dailies"
+
     # Connect to Render DB
     con = psycopg2.connect(**db_connect_params)
     cur = con.cursor()
     print("Connect successfully!")
 
-    # Get the type of the data
-    data_type = next(iter(dailies))
-
-    # Extract the "dailies" list
-    details = dailies["dailies"][0]
-
-    # Specify the timezone (Asia/Taipei for Taiwan)
-    taipei_timezone = pytz.timezone("Asia/Taipei")
+    # Extract the data
+    details, garmin_user_id = extract_data(dailies, KEYWORD)
 
     # Get today's datetime
-    now = datetime.now(taipei_timezone).strftime("%Y-%m-%d %H:%M:%S.%f")
+    now = datetime.now(TW_TIMEZONE).strftime("%Y-%m-%d %H:%M:%S.%f")
 
     # Merge the data
-    data = {"type": data_type, **details, "get_data_datetime": now}
+    data = {**details, "get_data_datetime": now}
 
     # Convert to json format
     json_data = json.dumps(data)
@@ -98,9 +94,9 @@ async def add_dailies(dailies: dict = Body(...)):
     # Insert to DB
     cur.execute(
         """
-        INSERT INTO dailies (details) VALUES (%s)
+        INSERT INTO cg_dailies (details, garmin_user_id) VALUES (%s, %s)
     """,
-        (json_data,),
+        (json_data, garmin_user_id),
     )
 
     # Commit the changes
@@ -117,25 +113,22 @@ async def add_dailies(dailies: dict = Body(...)):
 
 @app.post("/PulseOx")
 async def add_pulseox(pulseox: dict = Body(...)):
+    # Set parameters
+    KEYWORD = "pulseox"
+    
     # Connect to Render DB
     con = psycopg2.connect(**db_connect_params)
     cur = con.cursor()
     print("Connect successfully!")
 
-    # Get the type of the data
-    data_type = next(iter(pulseox))
-
-    # Extract the "pulseox" list
-    details = pulseox["pulseox"][0]
-
-    # Specify the timezone (Asia/Taipei for Taiwan)
-    taipei_timezone = pytz.timezone("Asia/Taipei")
+    # Extract the data
+    details, garmin_user_id = extract_data(pulseox, KEYWORD)
 
     # Get today's datetime
-    now = datetime.now(taipei_timezone).strftime("%Y-%m-%d %H:%M:%S.%f")
+    now = datetime.now(TW_TIMEZONE).strftime("%Y-%m-%d %H:%M:%S.%f")
 
     # Merge the data
-    data = {"type": data_type, **details, "get_data_datetime": now}
+    data = {**details, "get_data_datetime": now}
 
     # Convert to json format
     json_data = json.dumps(data)
@@ -143,9 +136,9 @@ async def add_pulseox(pulseox: dict = Body(...)):
     # Insert to DB
     cur.execute(
         """
-        INSERT INTO pulseox (details) VALUES (%s)
+        INSERT INTO cg_pulseox (details, garmin_user_id) VALUES (%s, %s)
     """,
-        (json_data,),
+        (json_data, garmin_user_id),
     )
 
     # Commit the changes
